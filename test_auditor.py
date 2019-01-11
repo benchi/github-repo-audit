@@ -65,17 +65,25 @@ def output_pure_tester(author, commits):
 @click.command()
 @click.option('--prod_repo', '-pr', type=str, help='Production code repo')
 @click.option('--prod_path', '-pp', type=str, default='', help='Production code path')
-@click.option('--prod_exclude_path', '-pe', type=str, default='', help='Production code exclusion path')
 @click.option('--test_repo', '-tr', type=str, default=None, help='Test code repo (Default same as prod)')
 @click.option('--test_path', '-tp', type=str, default='', help='Test code path')
 @click.option('--lookback', '-l', type=int, default=90, help='Lookback (in days - default 90)')
 @click.option('--github_token', '-gt', type=str, default=None, help='Github token (default env var GITHUB_ACCESS_TOKEN)')
 @click.option('--github_url', '-g', type=str, default='github.com', help='Github hostname (default github.com)')
-def cli(prod_repo, prod_path, prod_exclude_path, test_repo, test_path, lookback, github_token, github_url):
+def cli(prod_repo, prod_path, test_repo, test_path, lookback, github_token, github_url):
     test_repo = test_repo or prod_repo
     github_token = github_token or os.environ['GITHUB_ACCESS_TOKEN']
 
     g = Github(base_url="https://%s/api/v3" % github_url, login_or_token=github_token)
+
+    if test_repo == prod_repo:
+        prod_exclude_path = test_path
+    else:
+        prod_exclude_path = ''
+
+    if test_repo == prod_repo and prod_path == test_path:
+        print('ERROR - prod and test are the same. Exiting.')
+        return
 
     prod_commits = get_commits(g, prod_repo, prod_path, lookback, prod_exclude_path)
     test_commits = get_commits(g, test_repo, test_path, lookback)
